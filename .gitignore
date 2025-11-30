@@ -1,14 +1,25 @@
 .env
+.env.local
 node_modules
 .DS_Store
 packages/*/node_modules
 packages/*/.DS_Store
 packages/*/dist
 packages/*/.env
+packages/*/.env.local
 packages/*/.turbo
 packages/*/coverage
 tmp*
 .vscode
+
+# Build outputs
+packages/*/.next
+packages/*/build
+packages/*/out
+packages/hardhat/artifacts
+packages/hardhat/cache
+packages/hardhat/deployments
+packages/fhevm-sdk/tsconfig.tsbuildinfo
 
 # NPX package folders (these are published separately as npm packages)
 create-fhevm-nextjs/

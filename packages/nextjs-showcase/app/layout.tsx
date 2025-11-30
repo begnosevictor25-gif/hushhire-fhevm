@@ -1,26 +1,30 @@
-import type { Metadata } from 'next'
-import Script from 'next/script'
-import './globals.css'
+import type { Metadata } from "next";
+import Script from 'next/script';
+import { ClientProviders } from '../components/ClientProviders';
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Universal FHEVM SDK - Next.js Showcase',
-  description: 'Clean, simple FHEVM implementation that actually works',
-}
+  title: "HushHire - Privacy-First Recruitment Platform",
+  description: "Confidential salary matching powered by Fully Homomorphic Encryption (FHE)",
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
-      <body>
+      <body className="antialiased">
+        {/* Load FHEVM Relayer SDK v0.3.0-5 */}
         <Script
           src="https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.umd.cjs"
           strategy="beforeInteractive"
         />
-        {children}
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
-  )
+  );
 }

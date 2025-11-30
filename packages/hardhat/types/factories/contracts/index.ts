@@ -3,4 +3,5 @@
 /* eslint-disable */
 export * as reviewCardsFheUint32Sol from "./ReviewCardsFHE_uint32.sol";
 export { FHECounter__factory } from "./FHECounter__factory";
+export { HushHire__factory } from "./HushHire__factory";
 export { SimpleVoting_uint32__factory } from "./SimpleVoting_uint32__factory";
