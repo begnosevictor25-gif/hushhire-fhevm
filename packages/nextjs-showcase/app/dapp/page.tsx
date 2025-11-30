@@ -412,10 +412,12 @@ export default function DAppPage() {
           <p className="text-gray-400 mb-8 max-w-md mx-auto">
             Please connect your wallet to access the HushHire platform
           </p>
-          <ConnectButton />
+          <div className="flex justify-center mb-8">
+            <ConnectButton />
+          </div>
           <Link 
             href="/"
-            className="inline-flex items-center text-blue-400 hover:text-blue-300 mt-8 transition-colors"
+            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
