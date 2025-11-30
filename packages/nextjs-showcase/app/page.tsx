@@ -1,426 +1,410 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { useWallet, useFhevm } from '@fhevm-sdk';
-import FheCounter from '../components/FheCounter';
-import FheRatings from '../components/FheRatings';
-import FheVoting from '../components/FheVoting';
+import Link from 'next/link';
+import { Shield, Lock, Eye, Zap, CheckCircle, TrendingUp } from 'lucide-react';
 
-// Contract configuration
-const CONTRACT_ADDRESSES = {
-  31337: '0x40e8Aa088739445BC3a3727A724F56508899f65B', // Local Hardhat
-  11155111: '0x7A14b454D19A4CB4c55E0386d04Eb0B66e6717EC', // Sepolia - Updated for 0.9.1
-}
-
-// Sepolia network configuration
-const SEPOLIA_CONFIG = {
-  chainId: '0xaa36a7', // 11155111 in hex
-  chainName: 'Sepolia',
-  nativeCurrency: {
-    name: 'Sepolia Ether',
-    symbol: 'ETH',
-    decimals: 18,
-  },
-  rpcUrls: ['https://sepolia.infura.io/v3/'],
-  blockExplorerUrls: ['https://sepolia.etherscan.io/'],
-}
-
-
-// Window interface is already declared in types/ethereum.d.ts
-
-function HomePage() {
-  const [message, setMessage] = useState<string>('');
-  
-  // Network switching state
-  const [isSwitchingNetwork, setIsSwitchingNetwork] = useState(false);
-  const [networkError, setNetworkError] = useState<string>('');
-
-  // Use adapter hooks - they provide automatic state management
-  const { 
-    address: account, 
-    chainId, 
-    isConnected, 
-    connect: connectWallet, 
-    disconnect: disconnectWallet,
-    error: walletError 
-  } = useWallet();
-  
-  const { 
-    status: fhevmStatus, 
-    initialize: initializeFhevm,
-    error: fhevmError 
-  } = useFhevm();
-
-  const contractAddress = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES] || 'Not supported chain';
-
-  // Auto-initialize FHEVM when wallet connects
-  useEffect(() => {
-    if (isConnected && fhevmStatus === 'idle') {
-      initializeFhevm();
-    }
-  }, [isConnected, fhevmStatus, initializeFhevm]);
-
-  // Handle wallet connection using the hook
-  const handleConnectWallet = async () => {
-    try {
-      await connectWallet();
-      if (walletError) {
-        setMessage(`Wallet error: ${walletError}`);
-        setTimeout(() => setMessage(''), 3000);
-      }
-    } catch (error) {
-      console.error('❌ Wallet connection failed:', error);
-      setMessage(`Wallet connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setTimeout(() => setMessage(''), 3000);
-    }
-  };
-
-  // Handle wallet disconnect
-  const handleDisconnectWallet = () => {
-    disconnectWallet();
-    setMessage('');
-    setNetworkError('');
-    setIsSwitchingNetwork(false);
-  };
-
-  // Switch network to Sepolia
-  const switchNetworkToSepolia = async () => {
-    if (!window.ethereum) {
-      setNetworkError('No Ethereum provider found');
-      return;
-    }
-
-    try {
-      setIsSwitchingNetwork(true);
-      setNetworkError('');
-      setMessage('Switching to Sepolia network...');
-
-      // Try to switch to Sepolia network
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: SEPOLIA_CONFIG.chainId }],
-      });
-
-      // Chain ID will be updated automatically by useWallet hook
-      setMessage('Successfully switched to Sepolia!');
-      
-      console.log('✅ Network switched to Sepolia');
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      console.error('Network switch failed:', error);
-      
-      // If the chain doesn't exist, try to add it
-      if (error.code === 4902) {
-        try {
-          setMessage('Adding Sepolia network...');
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [SEPOLIA_CONFIG],
-          });
-          
-          // Chain ID will be updated automatically by useWallet hook
-          setMessage('Sepolia network added and switched!');
-          
-          console.log('✅ Sepolia network added and switched');
-          setTimeout(() => setMessage(''), 3000);
-        } catch (addError) {
-          console.error('Failed to add Sepolia network:', addError);
-          setNetworkError('Failed to add Sepolia network. Please add it manually in your wallet.');
-          setMessage('Failed to add Sepolia network');
-        }
-      } else {
-        setNetworkError(`Failed to switch network: ${error.message || 'Unknown error'}`);
-        setMessage('Failed to switch network');
-      }
-    } finally {
-      setIsSwitchingNetwork(false);
-    }
-  };
-
-
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
-      {/* Enhanced FHEVM Header */}
-      <header className="bg-gradient-to-r from-[#FFEB3B] to-[#FDD835] border-b-4 border-black shadow-2xl">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-[#FFEB3B]" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-                </svg>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full bg-black/20 backdrop-blur-md z-50 border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold text-white">HushHire</span>
+          </div>
+          <Link 
+            href="/dapp"
+            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300"
+          >
+            Launch App
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <div className="inline-flex items-center space-x-2 bg-blue-500/20 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-500/30 mb-8">
+              <Lock className="w-4 h-4 text-blue-400" />
+              <span className="text-blue-300 text-sm font-medium">Powered by Fully Homomorphic Encryption</span>
+            </div>
+            
+            <h1 className="text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
+              The Future of
+              <span className="block bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                Private Recruiting
+              </span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+              Match salary expectations without revealing sensitive information. 
+              <span className="text-blue-400 font-semibold"> Zero-knowledge proofs</span> meet recruitment—where both employers and candidates keep their cards close.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link 
+                href="/dapp"
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-lg font-bold rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 transform hover:scale-105"
+              >
+                Start Matching Now
+              </Link>
+              <a 
+                href="#how-it-works"
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white text-lg font-bold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+              >
+                Learn More
+              </a>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-8 mt-16 max-w-3xl mx-auto">
+              <div className="text-center">
+                <div className="text-4xl font-black text-blue-400 mb-2">100%</div>
+                <div className="text-gray-400 text-sm">Privacy Guaranteed</div>
               </div>
+              <div className="text-center">
+                <div className="text-4xl font-black text-cyan-400 mb-2">Zero</div>
+                <div className="text-gray-400 text-sm">Data Leakage</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-black text-blue-400 mb-2">∞</div>
+                <div className="text-gray-400 text-sm">Trust Required</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Problem Statement */}
+      <section className="py-20 px-6 bg-black/30 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
+              The Hiring Paradox
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Traditional recruitment forces both parties to reveal sensitive information prematurely, creating an inherently unfair negotiation dynamic.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Employer Pain */}
+            <div className="bg-gradient-to-br from-red-900/40 to-red-800/20 backdrop-blur-sm p-8 rounded-2xl border border-red-500/30">
+              <div className="w-14 h-14 bg-red-500/20 rounded-xl flex items-center justify-center mb-6">
+                <TrendingUp className="w-8 h-8 text-red-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Employer's Dilemma</h3>
+              <ul className="space-y-3 text-gray-300">
+                <li className="flex items-start">
+                  <span className="text-red-400 mr-3">•</span>
+                  <span>Revealing budget caps gives candidates unfair leverage in negotiations</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-red-400 mr-3">•</span>
+                  <span>Early salary disclosure attracts mercenaries, not culture fits</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-red-400 mr-3">•</span>
+                  <span>Competitors gain insight into compensation strategies</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-red-400 mr-3">•</span>
+                  <span>Internal pay equity is compromised when ranges become public</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Candidate Pain */}
+            <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-sm p-8 rounded-2xl border border-blue-500/30">
+              <div className="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center mb-6">
+                <Eye className="w-8 h-8 text-blue-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Candidate's Conundrum</h3>
+              <ul className="space-y-3 text-gray-300">
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-3">•</span>
+                  <span>Stating salary expectations too early locks in suboptimal offers</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-3">•</span>
+                  <span>Asking too high filters you out; too low leaves money on the table</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-3">•</span>
+                  <span>Current salary disclosure perpetuates historical pay gaps</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-3">•</span>
+                  <span>Multiple interview rounds waste time on misaligned expectations</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-12 p-8 bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-2xl border border-blue-500/30 text-center">
+            <p className="text-2xl font-bold text-white mb-3">
+              The Cost? <span className="text-blue-400">$400B+</span> annually in hiring inefficiencies
+            </p>
+            <p className="text-gray-300">
+              Mismatched salary expectations account for 40% of interview process failures globally
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Solution with FHE */}
+      <section className="py-20 px-6" id="how-it-works">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center space-x-2 bg-green-500/20 backdrop-blur-sm px-4 py-2 rounded-full border border-green-500/30 mb-6">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              <span className="text-green-300 text-sm font-medium">The FHE Solution</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
+              Compute on Encrypted Data
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              HushHire uses <span className="text-blue-400 font-semibold">Fully Homomorphic Encryption (FHE)</span> to compare salary figures without ever decrypting them—achieving true privacy-preserving computation.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-sm p-8 rounded-2xl border border-blue-500/30 text-center">
+              <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Lock className="w-9 h-9 text-blue-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">1. Encrypt</h3>
+              <p className="text-gray-300 text-sm leading-relaxed">
+                Employer encrypts their maximum offer using FHE. The plaintext value never touches the blockchain.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-cyan-900/40 to-cyan-800/20 backdrop-blur-sm p-8 rounded-2xl border border-pink-500/30 text-center">
+              <div className="w-16 h-16 bg-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Zap className="w-9 h-9 text-cyan-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">2. Compare</h3>
+              <p className="text-gray-300 text-sm leading-relaxed">
+                Smart contract performs encrypted comparison (offer ≥ expectation) without decryption.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-sm p-8 rounded-2xl border border-blue-500/30 text-center">
+              <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-9 h-9 text-blue-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">3. Reveal Match</h3>
+              <p className="text-gray-300 text-sm leading-relaxed">
+                Only the binary result (Match/No Match) is decrypted—actual numbers stay private forever.
+              </p>
+            </div>
+          </div>
+
+          {/* Technical Diagram */}
+          <div className="bg-black/40 backdrop-blur-sm p-8 rounded-2xl border border-white/10">
+            <h3 className="text-2xl font-bold text-white mb-6 text-center">How It Works Technically</h3>
+            <div className="grid md:grid-cols-4 gap-4 text-center">
+              <div className="p-4">
+                <div className="text-blue-400 font-mono text-sm mb-2">Input</div>
+                <div className="bg-blue-500/20 rounded-lg p-3 font-mono text-xs text-white">
+                  Offer: $8,500
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="text-cyan-400 font-mono text-sm mb-2">Encrypt</div>
+                <div className="bg-pink-500/20 rounded-lg p-3 font-mono text-xs text-gray-400 break-all">
+                  0x7a8f...3c2e
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="text-blue-400 font-mono text-sm mb-2">FHE Compute</div>
+                <div className="bg-blue-500/20 rounded-lg p-3 font-mono text-xs text-white">
+                  enc(8500) ≥ enc(8000)
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="text-green-400 font-mono text-sm mb-2">Result</div>
+                <div className="bg-green-500/20 rounded-lg p-3 font-mono text-xs text-green-400">
+                  ✓ Match!
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-400 text-sm text-center mt-6">
+              Powered by <span className="text-blue-400 font-semibold">Zama's FHEVM v0.9</span> on Ethereum Sepolia
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits */}
+      <section className="py-20 px-6 bg-black/30 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-black text-white text-center mb-16">
+            Why This Changes Everything
+          </h2>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-8 rounded-2xl border border-white/10">
+              <h3 className="text-2xl font-bold text-white mb-6">For Employers</h3>
+              <ul className="space-y-4">
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-green-400 mr-3 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="text-white font-semibold mb-1">Competitive Advantage</div>
+                    <div className="text-gray-400 text-sm">Budget strategies remain confidential from competitors</div>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-green-400 mr-3 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="text-white font-semibold mb-1">Faster Filtering</div>
+                    <div className="text-gray-400 text-sm">Instantly filter misaligned candidates without awkward conversations</div>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-green-400 mr-3 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="text-white font-semibold mb-1">Pay Equity Protection</div>
+                    <div className="text-gray-400 text-sm">Prevent internal comparisons that complicate HR policies</div>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-green-400 mr-3 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="text-white font-semibold mb-1">Compliance-Ready</div>
+                    <div className="text-gray-400 text-sm">Align with emerging salary transparency laws (EU, NYC, CA)</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-8 rounded-2xl border border-white/10">
+              <h3 className="text-2xl font-bold text-white mb-6">For Candidates</h3>
+              <ul className="space-y-4">
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-blue-400 mr-3 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="text-white font-semibold mb-1">Negotiation Power</div>
+                    <div className="text-gray-400 text-sm">Never reveal your bottom line prematurely</div>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-blue-400 mr-3 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="text-white font-semibold mb-1">Time Savings</div>
+                    <div className="text-gray-400 text-sm">Skip 3-5 interview rounds with misaligned employers</div>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-blue-400 mr-3 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="text-white font-semibold mb-1">Fair Compensation</div>
+                    <div className="text-gray-400 text-sm">Break the cycle of salary history anchoring</div>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-blue-400 mr-3 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="text-white font-semibold mb-1">Privacy Control</div>
+                    <div className="text-gray-400 text-sm">Your expectations are yours alone—cryptographically guaranteed</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Roadmap */}
+      <section className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-black text-white text-center mb-16">
+            Building the Future
+          </h2>
+
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-green-900/40 to-green-800/20 backdrop-blur-sm p-6 rounded-xl border border-green-500/30 flex items-start">
+              <CheckCircle className="w-6 h-6 text-green-400 mr-4 flex-shrink-0 mt-1" />
               <div>
-                <h1 className="text-black text-3xl font-bold tracking-tight">Universal FHEVM SDK</h1>
-                <p className="text-black/70 text-sm font-medium mt-1">Next.js Showcase</p>
+                <h3 className="text-xl font-bold text-white mb-2">✅ Phase 1: MVP (Current)</h3>
+                <p className="text-gray-300">FHEVM v0.9 integration, basic salary matching, Sepolia testnet deployment</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              {fhevmStatus === 'ready' ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                  </div>
-                  <span className="status-badge bg-green-600 text-white">READY</span>
-                </div>
-              ) : fhevmStatus === 'error' ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
-                    </svg>
-                  </div>
-                  <span className="status-badge bg-red-600 text-white">ERROR</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-[#FFEB3B] animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                    </svg>
-                  </div>
-                  <span className="status-badge bg-black text-[#FFEB3B]">LOADING</span>
-                </div>
-              )}
+
+            <div className="bg-gradient-to-r from-blue-900/40 to-blue-800/20 backdrop-blur-sm p-6 rounded-xl border border-blue-500/30 flex items-start">
+              <div className="w-6 h-6 bg-purple-500 rounded-full mr-4 flex-shrink-0 mt-1 flex items-center justify-center text-white font-bold text-sm">2</div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">🔜 Phase 2: Advanced Matching (Q2 2024)</h3>
+                <p className="text-gray-300">Multi-factor matching (skills, experience, benefits), batch processing, mainnet launch</p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-900/40 to-blue-800/20 backdrop-blur-sm p-6 rounded-xl border border-blue-500/30 flex items-start">
+              <div className="w-6 h-6 bg-blue-500 rounded-full mr-4 flex-shrink-0 mt-1 flex items-center justify-center text-white font-bold text-sm">3</div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">🚀 Phase 3: Marketplace (Q4 2024)</h3>
+                <p className="text-gray-300">Two-sided marketplace, recruiter tools, company verification, tokenomics</p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-cyan-900/40 to-cyan-800/20 backdrop-blur-sm p-6 rounded-xl border border-pink-500/30 flex items-start">
+              <div className="w-6 h-6 bg-pink-500 rounded-full mr-4 flex-shrink-0 mt-1 flex items-center justify-center text-white font-bold text-sm">4</div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">🌍 Phase 4: Global Scale (2025)</h3>
+                <p className="text-gray-300">Multi-chain support, API for ATS integration, enterprise licensing, regulatory compliance</p>
+              </div>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        {message && (
-          <div className="mb-8 glass-card p-4 border-l-4 border-[#FFEB3B] animate-pulse">
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-[#FFEB3B]" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd"/>
-              </svg>
-              <p className="text-white font-medium">{message}</p>
-            </div>
+      {/* CTA */}
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-gradient-to-r from-blue-900/50 via-cyan-900/50 to-blue-900/50 backdrop-blur-sm p-12 rounded-3xl border border-blue-500/30">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
+              Ready to Hire in Stealth Mode?
+            </h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Join the future of privacy-preserving recruitment. Try our demo with pre-loaded candidates.
+            </p>
+            <Link 
+              href="/dapp"
+              className="inline-block px-10 py-5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-xl font-bold rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 transform hover:scale-105"
+            >
+              Launch HushHire App →
+            </Link>
+            <p className="text-gray-400 text-sm mt-6">
+              No registration required • Connect wallet to start • Sepolia testnet
+            </p>
           </div>
-        )}
-          
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div className="glass-card p-8 hover:border-[#FFEB3B] transition-all duration-300">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-[#FFEB3B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-                <h2 className="text-2xl font-bold text-white">Wallet Connection</h2>
-              </div>
-              {!isConnected ? (
-                <button onClick={handleConnectWallet} className="btn-primary">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                  </svg>
-                  Connect
-                </button>
-              ) : (
-                <button onClick={handleDisconnectWallet} className="btn-danger">
-                  Disconnect
-                </button>
-              )}
-            </div>
-
-            {!isConnected ? (
-                          <div className="text-center py-8">
-                <svg className="w-16 h-16 text-[#3A3A3A] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-                <p className="text-gray-400 mb-4">Connect your wallet to use FHEVM features</p>
-                
-                {/* Network switching notice */}
-                            <div className="mt-4 p-3 bg-[#0A0A0A] border border-[#FFEB3B]/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                                <svg className="w-4 h-4 text-[#FFEB3B]" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-                    </svg>
-                                <span className="text-[#FFEB3B] font-semibold text-xs">Network Notice</span>
-                  </div>
-                  <p className="text-gray-400 text-xs leading-relaxed">
-                    <strong className="text-[#FFEB3B]">Important:</strong> This app requires the Sepolia testnet. 
-                    After connecting your wallet, you'll be prompted to switch to Sepolia if you're on a different network.
-                  </p>
-                </div>
-
-                            {/* SDK Features */}
-                            <div className="mt-6 space-y-2">
-                              <div className="flex items-center gap-2 text-xs text-gray-300">
-                                <svg className="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                                </svg>
-                                <span>Next.js compatible FHEVM</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-300">
-                                <svg className="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                                </svg>
-                                <span>No webpack bundling issues</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-300">
-                                <svg className="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                                </svg>
-                                <span>Real contract interactions</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-300">
-                                <svg className="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                                </svg>
-                                <span>Framework-agnostic core</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-300">
-                                <svg className="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                                </svg>
-                                <span>Works in Next.js, React, Vue</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-300">
-                                <svg className="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                                </svg>
-                                <span>Clean, simple API</span>
-                              </div>
-                            </div>
-
-                            <div className="mt-4 p-3 bg-[#0A0A0A] border border-[#FFEB3B]/30 rounded-lg">
-                              <p className="text-gray-400 text-xs leading-relaxed">
-                                <strong className="text-[#FFEB3B]">Note:</strong> This is a demonstration using REAL FHEVM SDK from Zama's CDN.
-                                The SDK provides actual encryption/decryption functionality on Sepolia testnet.
-                              </p>
-                            </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="info-card">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm font-medium">Status</span>
-                    <span className="text-green-400 font-semibold flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                      </svg>
-                      Connected
-                    </span>
-                  </div>
-                </div>
-                <div className="info-card">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-gray-400 text-sm font-medium">Address</span>
-                    <span className="code-text text-[#FFEB3B]">{account}</span>
-                  </div>
-                </div>
-                <div className="info-card">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm font-medium">Chain ID</span>
-                    <span className="text-white font-mono font-bold">{chainId}</span>
-                  </div>
-                </div>
-                <div className="info-card">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-gray-400 text-sm font-medium">Contract</span>
-                    {contractAddress === 'Not supported chain' ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-red-400 text-sm">Not supported chain</span>
-                        <button
-                          onClick={switchNetworkToSepolia}
-                          disabled={isSwitchingNetwork}
-                          className="btn-primary text-xs px-3 py-1"
-                        >
-                          {isSwitchingNetwork ? (
-                            <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                            </svg>
-                          ) : (
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                            </svg>
-                          )}
-                          {isSwitchingNetwork ? 'Switching...' : 'Switch to Sepolia'}
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="code-text text-[#FFEB3B]">{contractAddress}</span>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Error displays */}
-                {networkError && (
-                  <div className="info-card border-red-500/30 bg-red-500/5">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                      </svg>
-                      <span className="text-red-400 text-sm">{networkError}</span>
-                    </div>
-                  </div>
-                )}
-                {walletError && (
-                  <div className="info-card border-red-500/30 bg-red-500/5">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                      </svg>
-                      <span className="text-red-400 text-sm">Wallet: {walletError}</span>
-                    </div>
-                  </div>
-                )}
-                {fhevmError && (
-                  <div className="info-card border-red-500/30 bg-red-500/5">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                      </svg>
-                      <span className="text-red-400 text-sm">FHEVM: {fhevmError}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {isConnected && fhevmStatus === 'ready' && (
-            <FheVoting 
-              account={account}
-              chainId={chainId}
-              isConnected={isConnected}
-              isInitialized={fhevmStatus === 'ready'}
-              onMessage={setMessage}
-            />
-          )}
         </div>
+      </section>
 
-        {isConnected && fhevmStatus === 'ready' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <FheCounter 
-              account={account}
-              chainId={chainId}
-              isConnected={isConnected}
-              isInitialized={fhevmStatus === 'ready'}
-              onMessage={setMessage}
-            />
-
-            <FheRatings 
-              account={account}
-              chainId={chainId}
-              isConnected={isConnected}
-              isInitialized={fhevmStatus === 'ready'}
-              onMessage={setMessage}
-            />
+      {/* Footer */}
+      <footer className="py-12 px-6 border-t border-white/10">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-3 mb-6 md:mb-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-white">HushHire</span>
+            </div>
+            <div className="text-gray-400 text-sm text-center md:text-right">
+              <p className="mb-2">Built with FHEVM v0.9 by Zama</p>
+              <p>© 2024 HushHire. Privacy-first recruitment for the Web3 era.</p>
+            </div>
           </div>
-        )}
-      </main>
+        </div>
+      </footer>
     </div>
   );
 }
 
-export default function Home() {
-  return <HomePage />;
-}
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
