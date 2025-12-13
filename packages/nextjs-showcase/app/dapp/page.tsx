@@ -90,7 +90,6 @@ export default function DAppPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
   const [offerAmount, setOfferAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [countdown, setCountdown] = useState(0);
   const [canDecrypt, setCanDecrypt] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [result, setResult] = useState<number | null>(null);
@@ -196,18 +195,8 @@ export default function DAppPage() {
 
       console.log('✅ Offer submitted');
 
-      // Start countdown (权限同步等待时间)
-      setCountdown(10);
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setCanDecrypt(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      // 立即允许解密
+      setCanDecrypt(true);
     } catch (e: any) {
       console.error('❌ Submit failed:', e);
       setError(e.message || 'Failed to submit offer');
@@ -260,7 +249,7 @@ export default function DAppPage() {
       );
 
       // Decrypt
-      console.log('🔓 Decrypting... (30-60s)');
+      console.log('🔓 Decrypting...');
       const decryptedResults = await fhevmInstance.userDecrypt(
         handleContractPairs,
         keypair.privateKey,
@@ -433,14 +422,6 @@ export default function DAppPage() {
               </div>
             )}
 
-            {countdown > 0 && (
-              <div className="mb-6 p-4 bg-yellow-900/40 border border-yellow-500/50 rounded-xl text-center">
-                <p className="text-yellow-300 font-semibold">
-                  ⏳ Synchronizing permissions... Please wait {countdown} seconds
-                </p>
-              </div>
-            )}
-
             {!canDecrypt && result === null && (
               <button
                 onClick={handleSubmitOffer}
@@ -467,7 +448,7 @@ export default function DAppPage() {
                 {isDecrypting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Decrypting... (30-60s)
+                    Decrypting...
                   </>
                 ) : (
                   '🔓 Decrypt Result'
