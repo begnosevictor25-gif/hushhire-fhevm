@@ -7,24 +7,6 @@ import { BrowserProvider, Contract } from 'ethers';
 import { ArrowLeft, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
-// ==================== 演示模式检测 ====================
-function checkDemoMode(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  // 1. URL 参数（优先级最高）
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('demo') === 'true') return true;
-  
-  // 2. localStorage
-  if (localStorage.getItem('DEMO_MODE') === 'true') return true;
-  
-  // 3. 环境变量（仅开发环境）
-  if (process.env.NODE_ENV === 'development' && 
-      process.env.NEXT_PUBLIC_DEMO_MODE === 'true') return true;
-  
-  return false;
-}
-
 // Contract configuration
 const CONTRACT_ADDRESS = '0xaD289c8a3D87fdA8663FC2302622634Bfab23Fc3';
 const CONTRACT_ABI = [
@@ -99,7 +81,6 @@ export default function DAppPage() {
   const { isConnected, address } = useAccount();
   const { data: walletClient } = useWalletClient();
 
-  const [demoMode, setDemoMode] = useState(false);
   const [fhevmInstance, setFhevmInstance] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
@@ -114,17 +95,6 @@ export default function DAppPage() {
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [result, setResult] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // 检测演示模式
-  useEffect(() => {
-    const isDemo = checkDemoMode();
-    setDemoMode(isDemo);
-    if (isDemo) {
-      console.log('🎭 DEMO MODE ACTIVATED');
-    } else {
-      console.log('🔐 REAL MODE');
-    }
-  }, []);
 
   // Initialize FHEVM (按照文档的方式)
   useEffect(() => {
@@ -226,22 +196,8 @@ export default function DAppPage() {
 
       console.log('✅ Offer submitted');
 
-      // 演示模式：保存明文数据和候选人信息
-      if (demoMode) {
-        const storageKey = `demo_offer_${address}_${selectedCandidate}`;
-        const candidateExpectation = candidates[selectedCandidate].expectedSalary;
-        localStorage.setItem(storageKey, JSON.stringify({
-          offerAmount: parseInt(offerAmount),
-          candidateExpectation: candidateExpectation,
-          timestamp: Date.now()
-        }));
-        console.log('🎭 Saved plaintext for demo mode');
-      }
-
       // Start countdown (权限同步等待时间)
-      // 演示模式下缩短倒计时
-      const waitTime = demoMode ? 3 : 10;
-      setCountdown(waitTime);
+      setCountdown(10);
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -303,8 +259,9 @@ export default function DAppPage() {
         eip712.message
       );
 
-      // 创建解密 Promise
-      const decryptPromise = fhevmInstance.userDecrypt(
+      // Decrypt
+      console.log('🔓 Decrypting... (30-60s)');
+      const decryptedResults = await fhevmInstance.userDecrypt(
         handleContractPairs,
         keypair.privateKey,
         keypair.publicKey,
@@ -313,89 +270,23 @@ export default function DAppPage() {
         address,
         startTimeStamp,
         durationDays
-      ).then((decryptedResults: any) => {
-        return decryptedResults[encryptedHandle];
-      });
+      );
 
-      // 演示模式：5 秒超时
-      if (demoMode) {
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('TIMEOUT')), 5000)
-        );
-        
-        try {
-          // 竞速：真实解密 vs 超时
-          console.log('🔓 Attempting real decryption... (5s timeout)');
-          const decryptedValue = await Promise.race([decryptPromise, timeoutPromise]);
-          
-          // 真实解密成功
-          console.log('✅ Real decryption succeeded:', decryptedValue);
-          setResult(decryptedValue);
-          
-          // 清除存储的数据
-          const storageKey = `demo_offer_${address}_${selectedCandidate}`;
-          localStorage.removeItem(storageKey);
-          
-        } catch (timeoutError: any) {
-          if (timeoutError.message === 'TIMEOUT') {
-            // 超时，使用 Mock
-            console.log('⏰ Timeout, using mock...');
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 模拟延迟
-            
-            const storageKey = `demo_offer_${address}_${selectedCandidate}`;
-            const savedData = localStorage.getItem(storageKey);
-            
-            if (savedData) {
-              const { offerAmount, candidateExpectation } = JSON.parse(savedData);
-              // 计算 Mock 结果：offer >= expectation ? 1 : 0
-              const mockResult = offerAmount >= candidateExpectation ? 1 : 0;
-              
-              console.log('🎭 Mock result:', mockResult, 
-                `(offer: ${offerAmount}, expectation: ${candidateExpectation})`);
-              setResult(mockResult);
-              
-              // 清除记录
-              localStorage.removeItem(storageKey);
-            } else {
-              throw new Error('No demo data found');
-            }
-          } else {
-            throw timeoutError;
-          }
-        }
-      } else {
-        // 真实模式：正常解密
-        console.log('🔓 Decrypting... (30-60s)');
-        const decryptedValue = await decryptPromise;
-        console.log('✅ Real decryption:', decryptedValue);
-        setResult(decryptedValue);
-      }
+      // Get decrypted value and convert to number
+      const decryptedValue = decryptedResults[encryptedHandle];
+      console.log('✅ Raw decrypted value:', decryptedValue, 'type:', typeof decryptedValue);
+      
+      // Handle BigInt or number
+      const resultNum = typeof decryptedValue === 'bigint' 
+        ? Number(decryptedValue) 
+        : Number(decryptedValue);
+      
+      console.log('✅ Decrypted result:', resultNum);
+      setResult(resultNum);
       
     } catch (e: any) {
       console.error('❌ Decrypt failed:', e);
-      
-      // 演示模式下的其他错误也走 Mock
-      if (demoMode && (e.message?.includes('500') || e.message?.includes('network') || e.message?.includes('relayer'))) {
-        console.log('🎭 Error, using mock fallback...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const storageKey = `demo_offer_${address}_${selectedCandidate}`;
-        const savedData = localStorage.getItem(storageKey);
-        
-        if (savedData) {
-          const { offerAmount, candidateExpectation } = JSON.parse(savedData);
-          const mockResult = offerAmount >= candidateExpectation ? 1 : 0;
-          
-          console.log('🎭 Mock fallback result:', mockResult);
-          setResult(mockResult);
-          localStorage.removeItem(storageKey);
-        } else {
-          setError(e.message || 'Failed to decrypt result');
-        }
-      } else {
-        // 真实模式显示错误
-        setError(e.message || 'Failed to decrypt result');
-      }
+      setError(e.message || 'Failed to decrypt result');
     } finally {
       setIsDecrypting(false);
     }
